@@ -1,5 +1,5 @@
 /* ============================================================
-   prose.js  —  the library that runs your language
+   my-first-my-language.js  —  the library that runs your language
 
    You write a page in plain English (see index.html).
    This file reads those words and builds a real webpage.
@@ -381,6 +381,6 @@
   }
 
   // hand the library to the page
-  window.Prose = { render: render };
+  window.MyLanguage = { render: render };
 
 })();
