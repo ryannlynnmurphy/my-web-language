@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>a page in your language</title>
+</head>
+<body>
+
+<!-- ============================================================
+     THIS IS YOUR WEBSITE.
+     It's written in your language, not in code.
+     Change the words below, save, refresh the browser, watch it move.
+     ============================================================ -->
+<script type="text/page" id="source">
+
+page
+  - is black
+
+text 1
+  - says "Ryann's Desk"
+  - is white
+  - is large
+  - sits top
+
+text 2
+  - says "Something's on the table tonight."
+  - is gray
+  - sits center
+
+button 1
+  - says "Open the folder"
+  - is dark blue
+  - sits bottom-left
+
+button 2
+  - says "Close the folder"
+  - is gray
+  - sits bottom-right
+
+folder 1
+  - says "Grid Logs — the entry at 02:13 is missing."
+  - is white
+  - is medium sized
+  - sits center
+  - is hidden
+
+when the user clicks button 1
+  - folder 1 animates open
+    - takes 1 seconds
+    - speeds up
+    - bounces
+
+when the user clicks button 2
+  - folder 1 disappears
+
+</script>
+
+<!-- the library that reads your language and builds the page -->
+<script src="staging.js"></script>
+<script>
+  var source = document.getElementById("source").textContent;
+  Staging.render(source, document.body);
+</script>
+
+</body>
+</html>
