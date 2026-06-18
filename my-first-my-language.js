@@ -249,7 +249,13 @@
      MAKING THINGS HAPPEN  —  the "when the user clicks" blocks
      ---------------------------------------------------------- */
 
-  function wireBehavior(node) {
+  // route a "when ..." block to the right kind of trigger
+  function wireWhen(node) {
+    if (node.text.toLowerCase().indexOf("hover") !== -1) wireHover(node);
+    else wireClick(node);
+  }
+
+  function wireClick(node) {
     // "when the user clicks button 1"  ->  trigger is "button 1"
     var m = node.text.toLowerCase().match(/clicks?\s+(.+)$/);
     if (!m) return;
@@ -260,6 +266,28 @@
     // we carry a little memory of "the last thing we named" so "it" works.
     trigger.addEventListener("click", function () {
       runStatements(node.children, { last: null });
+    });
+  }
+
+  function wireHover(node) {
+    // "when the user hovers over button 1"  ->  trigger is "button 1"
+    var m = node.text.toLowerCase().match(/hovers?\s+(?:over\s+)?(.+)$/);
+    if (!m) return;
+    var trigger = registry[findTargetFromPhrase(m[1])];
+    if (!trigger) return;
+
+    // a hover has two moments: the pointer arrives, and the pointer leaves.
+    // on arrival we run what's written. on leave we put everything back the
+    // way it was — so a hover effect quietly undoes itself, like people expect.
+    trigger.addEventListener("mouseenter", function () {
+      var before = {};
+      Object.keys(registry).forEach(function (n) { before[n] = registry[n].style.display; });
+      trigger._before = before;
+      runStatements(node.children, { last: null });
+    });
+    trigger.addEventListener("mouseleave", function () {
+      var before = trigger._before || {};
+      Object.keys(before).forEach(function (n) { registry[n].style.display = before[n]; });
     });
   }
 
@@ -428,7 +456,7 @@
       el.style.setProperty("--from", tf + " translateY(14px) scale(.96)");
     });
 
-    behaviors.forEach(wireBehavior);
+    behaviors.forEach(wireWhen);
   }
 
   // hand the library to the page

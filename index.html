@@ -40,6 +40,12 @@ folder 1
   - sits center
   - is hidden
 
+text 3
+  - says "(go on, open it)"
+  - is gray
+  - sits 70 up from the bottom
+  - is hidden
+
 when the user clicks button 1
   if the folder is open
     close it
@@ -48,6 +54,9 @@ when the user clicks button 1
       - takes 1 seconds
       - speeds up
       - bounces
+
+when the user hovers over button 1
+  text 3 appears
 
 </script>
 

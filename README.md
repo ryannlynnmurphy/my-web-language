@@ -44,8 +44,17 @@ that up.
 - **what they look like:** `says "..."`, `is <color>`, `is <size>` (small / medium / large)
 - **where they sit:** the nine spots — `top-left` `top` `top-right` `left` `center` `right` `bottom-left` `bottom` `bottom-right`, read inside whatever field they're in
 - **fields:** `box` is a stage (you place things at its nine spots); `row` / `column` arrange things for you
-- **what happens:** `when the user clicks <thing>` → `<thing> appears` / `animates open` / `disappears` (or `opens` / `closes`)
+- **what happens:** `when the user clicks <thing>` or `when the user hovers over <thing>` → `<thing> appears` / `animates open` / `disappears` (or `opens` / `closes`)
 - **how it moves (stackable):** `takes N seconds`, `steady`, `speeds up`, `slows down`, `bounces`
+
+A hover quietly undoes itself when the pointer leaves:
+
+```
+when the user hovers over button 1
+  text 3 appears
+```
+
+The hint shows while you're hovering and hides again the moment you move away — you don't have to say "and hide it when they leave," because that's what a normal person expects a hover to do.
 
 ## Deciding (if / otherwise / it)
 
