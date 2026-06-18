@@ -14,16 +14,29 @@ is just the receipt.
 
 ```
 button 1
-  - says "Open the folder"
+  - says "The folder"
   - is dark blue
-  - sits bottom-left
+  - sits bottom
+
+folder 1
+  - says "Grid Logs — the entry at 02:13 is missing."
+  - is white
+  - sits center
+  - is hidden
 
 when the user clicks button 1
-  - folder 1 animates open
-    - takes 1 seconds
-    - speeds up
-    - bounces
+  if the folder is open
+    close it
+  otherwise
+    animate it open
+      - takes 1 seconds
+      - speeds up
+      - bounces
 ```
+
+One button. If the folder's already open, it closes. Otherwise it opens. The
+language remembers whether the folder is open all by itself — you never set
+that up.
 
 ## What you can say so far
 
@@ -31,8 +44,26 @@ when the user clicks button 1
 - **what they look like:** `says "..."`, `is <color>`, `is <size>` (small / medium / large)
 - **where they sit:** the nine spots — `top-left` `top` `top-right` `left` `center` `right` `bottom-left` `bottom` `bottom-right`, read inside whatever field they're in
 - **fields:** `box` is a stage (you place things at its nine spots); `row` / `column` arrange things for you
-- **what happens:** `when the user clicks <thing>` → `<thing> appears` / `animates open` / `disappears`
+- **what happens:** `when the user clicks <thing>` → `<thing> appears` / `animates open` / `disappears` (or `opens` / `closes`)
 - **how it moves (stackable):** `takes N seconds`, `steady`, `speeds up`, `slows down`, `bounces`
+
+## Deciding (if / otherwise / it)
+
+Every thing on the page already knows one fact about itself: whether it's
+open (on screen) or closed (hidden). So you can ask, and act on the answer.
+
+```
+if the folder is open
+  close it
+otherwise
+  open it
+```
+
+- **`if the folder is open`** — check whether it's on screen right now.
+- whatever's **indented under the `if`** happens only if the answer is yes.
+- **`otherwise`** is the other road — its indented lines happen if the answer is no.
+- **`it`** means *the last thing you named.* After `if the folder is open`, "it" can only mean the folder, so you never repeat the name.
+- **`the folder`** works when there's only one folder. With more than one, say `folder 1`.
 
 ## Run it
 
