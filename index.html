@@ -23,15 +23,14 @@ text 1
   - is large
   - sits top
 
-text 2
-  - says "Something's on the table tonight."
-  - is gray
-  - sits center
+blank 1
+  - says "type your name"
+  - sits 130 down from the top
 
-button 1
-  - says "The folder"
-  - is dark blue
-  - sits bottom
+text 2
+  - is light blue
+  - is large
+  - sits 210 down from the top
 
 folder 1
   - says "Grid Logs — the entry at 02:13 is missing."
@@ -39,12 +38,21 @@ folder 1
   - is medium sized
   - sits center
   - is hidden
+  - can be dragged
+
+button 1
+  - says "The folder"
+  - is dark blue
+  - sits bottom
 
 text 3
   - says "(go on, open it)"
   - is gray
   - sits 70 up from the bottom
   - is hidden
+
+when the user types in blank 1
+  text 2 says what they typed
 
 when the user clicks button 1
   if the folder is open
@@ -54,6 +62,9 @@ when the user clicks button 1
       - takes 1 seconds
       - speeds up
       - bounces
+
+when the user double-clicks folder 1
+  close it
 
 when the user hovers over button 1
   text 3 appears

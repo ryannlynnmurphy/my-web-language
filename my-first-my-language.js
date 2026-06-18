@@ -57,7 +57,8 @@
   };
 
   // the words that name a thing that exists
-  const KINDS = ["page", "box", "row", "column", "button", "folder", "text", "image", "link"];
+  // ("blank" is a box you type into — like a fill-in-the-blank)
+  const KINDS = ["page", "box", "row", "column", "button", "folder", "text", "image", "link", "blank"];
 
 
   /* ----------------------------------------------------------
@@ -129,6 +130,7 @@
     if (kind === "button") el = document.createElement("button");
     else if (kind === "link") el = document.createElement("a");
     else if (kind === "image") el = document.createElement("img");
+    else if (kind === "blank") { el = document.createElement("input"); el.type = "text"; }
     else el = document.createElement("div");
 
     el.className = "thing kind-" + kind;
@@ -143,11 +145,13 @@
 
     // the bullets under this thing describe it; other things under it live inside it
     var pos = null;
+    var draggable = false;
     node.children.forEach(function (child) {
       if (child.text.charAt(0) === "-") {
         applyProp(el, kind, child.text);
         var maybe = readPosition(child.text);
         if (maybe) pos = maybe;
+        if (/can be dragged|can be moved|can drag|drag it/.test(child.text.toLowerCase())) draggable = true;
       } else if (kindOf(child.text)) {
         makeThing(child, el, childField);   // a thing inside a field
       }
@@ -166,7 +170,33 @@
 
     registry[name] = el;
     parentEl.appendChild(el);
+    if (draggable) makeDraggable(el);
     return el;
+  }
+
+  // let the user pick a thing up and move it around
+  function makeDraggable(el) {
+    el.style.cursor = "grab";
+    el.addEventListener("pointerdown", function (e) {
+      e.preventDefault();
+      var rect = el.getBoundingClientRect();
+      var grabX = e.clientX - rect.left;   // where on the thing you grabbed it
+      var grabY = e.clientY - rect.top;
+      el.style.cursor = "grabbing";
+      el.style.transform = "none";         // stop centering — you're holding it now
+
+      function move(ev) {
+        el.style.left = (ev.clientX - grabX) + "px";
+        el.style.top  = (ev.clientY - grabY) + "px";
+      }
+      function drop() {
+        el.style.cursor = "grab";
+        document.removeEventListener("pointermove", move);
+        document.removeEventListener("pointerup", drop);
+      }
+      document.addEventListener("pointermove", move);
+      document.addEventListener("pointerup", drop);
+    });
   }
 
   // read a "sits ..." bullet into a spot (+ optional nudge)
@@ -197,7 +227,9 @@
     var low = p.toLowerCase();
 
     if (low.indexOf("says") === 0 || low.indexOf("holds") === 0) {
-      el.textContent = quoted(p);
+      // a blank "says" its ghost hint; everything else says its words outright
+      if (kind === "blank") el.placeholder = quoted(p);
+      else el.textContent = quoted(p);
       return;
     }
     if (low.indexOf("shows") === 0 && kind === "image") {
@@ -249,23 +281,39 @@
      MAKING THINGS HAPPEN  —  the "when the user clicks" blocks
      ---------------------------------------------------------- */
 
-  // route a "when ..." block to the right kind of trigger
+  // route a "when ..." block to the right kind of gesture
   function wireWhen(node) {
-    if (node.text.toLowerCase().indexOf("hover") !== -1) wireHover(node);
-    else wireClick(node);
+    var low = node.text.toLowerCase();
+    if (low.indexOf("hover") !== -1)        wireHover(node);
+    else if (low.indexOf("double") !== -1)  wireTrigger(node, "dblclick", /double[- ]?clicks?\s+(.+)$/);
+    else if (low.indexOf("type") !== -1)    wireTyping(node);
+    else                                    wireTrigger(node, "click", /clicks?\s+(.+)$/);
   }
 
-  function wireClick(node) {
-    // "when the user clicks button 1"  ->  trigger is "button 1"
-    var m = node.text.toLowerCase().match(/clicks?\s+(.+)$/);
+  // the plain "do it when this gesture happens" wiring — used by click and double-click.
+  // everything written underneath runs, in order, every time the gesture happens.
+  // we carry a little memory of "the last thing we named" so "it" works.
+  function wireTrigger(node, domEvent, phrase) {
+    var m = node.text.toLowerCase().match(phrase);
     if (!m) return;
     var trigger = registry[findTargetFromPhrase(m[1])];
     if (!trigger) return;
+    // "it" starts out meaning the very thing you clicked, so
+    // "double-clicks folder 1: close it" knows what "it" is.
+    trigger.addEventListener(domEvent, function () {
+      runStatements(node.children, { last: trigger });
+    });
+  }
 
-    // everything written underneath runs, in order, every time it's clicked.
-    // we carry a little memory of "the last thing we named" so "it" works.
-    trigger.addEventListener("click", function () {
-      runStatements(node.children, { last: null });
+  function wireTyping(node) {
+    // "when the user types in blank 1"  ->  runs on every keystroke,
+    // and remembers what they typed so you can use it.
+    var m = node.text.toLowerCase().match(/types?(?:\s+in)?\s+(.+)$/);
+    if (!m) return;
+    var trigger = registry[findTargetFromPhrase(m[1])];
+    if (!trigger) return;
+    trigger.addEventListener("input", function () {
+      runStatements(node.children, { last: trigger, typed: trigger.value });
     });
   }
 
@@ -283,7 +331,7 @@
       var before = {};
       Object.keys(registry).forEach(function (n) { before[n] = registry[n].style.display; });
       trigger._before = before;
-      runStatements(node.children, { last: null });
+      runStatements(node.children, { last: trigger });
     });
     trigger.addEventListener("mouseleave", function () {
       var before = trigger._before || {};
@@ -341,6 +389,17 @@
     var target = resolveThing(line, ctx);
     if (!target) return;
 
+    // "text 1 says what they typed" -> echo the typing into that thing, live
+    if (/says\s+what\s+(they|was)\s+typed/.test(low)) {
+      target.textContent = ctx.typed || "";
+      return;
+    }
+    // "text 1 says ..." -> set its words outright
+    if (/\bsays\b/.test(low) && /"/.test(line)) {
+      target.textContent = quoted(line);
+      return;
+    }
+
     if (low.indexOf("animate") !== -1) {
       var motions = [], seconds = null;
       node.children.forEach(function (sub) {
@@ -363,7 +422,7 @@
     var low = phrase.toLowerCase();
 
     // "it" means the last thing we named
-    if (/\bit\b/.test(low) && !/\b(folder|button|text|box|row|column|image|link)\b/.test(low)) {
+    if (/\bit\b/.test(low) && !/\b(folder|button|text|box|row|column|image|link|blank)\b/.test(low)) {
       return ctx.last;
     }
 
@@ -372,7 +431,7 @@
     if (byName) { ctx.last = registry[byName]; return ctx.last; }
 
     // "the folder" / "the button" -> the one thing of that kind
-    var k = low.match(/\b(button|folder|text|box|row|column|image|link)\b/);
+    var k = low.match(/\b(button|folder|text|box|row|column|image|link|blank)\b/);
     if (k) {
       var ofKind = Object.keys(registry).filter(function (n) { return n.split(" ")[0] === k[1]; });
       if (ofKind.length) { ctx.last = registry[ofKind[0]]; return ctx.last; }
@@ -427,6 +486,8 @@
         ".kind-button{border:none;border-radius:10px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.2px}" +
         ".kind-folder{padding:22px 26px;border-radius:14px;max-width:60vw;line-height:1.4;box-shadow:0 18px 50px rgba(0,0,0,.45)}" +
         ".kind-text{line-height:1.3;letter-spacing:-.01em}" +
+        ".kind-blank{border:1px solid rgba(255,255,255,.28);border-radius:10px;padding:11px 15px;font-family:inherit;font-size:16px;background:rgba(255,255,255,.06);color:#f5f5f2;outline:none;min-width:240px}" +
+        ".kind-blank::placeholder{color:rgba(245,245,242,.45)}" +
         "@keyframes openAnim{from{opacity:0;transform:var(--from)}to{opacity:1}}";
       document.head.appendChild(styleEl);
     }

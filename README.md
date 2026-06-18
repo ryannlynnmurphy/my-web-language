@@ -40,12 +40,16 @@ that up.
 
 ## What you can say so far
 
-- **things that exist:** `page` `box` `row` `column` `button` `folder` `text` `image` `link`
+- **things that exist:** `page` `box` `row` `column` `button` `folder` `text` `image` `link` `blank` (a box you type into)
 - **what they look like:** `says "..."`, `is <color>`, `is <size>` (small / medium / large)
+- **what they can do:** `can be dragged` (the user can pick it up and move it)
 - **where they sit:** the nine spots — `top-left` `top` `top-right` `left` `center` `right` `bottom-left` `bottom` `bottom-right`, read inside whatever field they're in
 - **fields:** `box` is a stage (you place things at its nine spots); `row` / `column` arrange things for you
-- **what happens:** `when the user clicks <thing>` or `when the user hovers over <thing>` → `<thing> appears` / `animates open` / `disappears` (or `opens` / `closes`)
+- **gestures:** `when the user clicks` / `double-clicks` / `hovers over` / `types in <thing>`
+- **what happens:** `<thing> appears` / `animates open` / `disappears` (or `opens` / `closes`), `<thing> says "..."`, `<thing> says what they typed`
 - **how it moves (stackable):** `takes N seconds`, `steady`, `speeds up`, `slows down`, `bounces`
+
+Inside any `when` block, **`it`** starts out meaning the thing the gesture happened to — so `when the user double-clicks folder 1 → close it` knows "it" is the folder.
 
 A hover quietly undoes itself when the pointer leaves:
 
