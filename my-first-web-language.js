@@ -1,5 +1,5 @@
 /* ============================================================
-   my-first-my-language.js  —  the library that runs your language
+   my-first-web-language.js  —  the library that runs your language
 
    You write a page in plain English (see index.html).
    This file reads those words and builds a real webpage.
