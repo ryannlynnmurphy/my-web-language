@@ -41,4 +41,4 @@ Open `index.html` in a browser. Edit the English at the top of the file, save, r
 ## Files
 
 - `index.html` — the website, written in the language.
-- `staging.js` — the library that reads the language and builds the page.
+- `prose.js` — the library that reads the language and builds the page.
