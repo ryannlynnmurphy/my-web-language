@@ -249,30 +249,108 @@
      MAKING THINGS HAPPEN  —  the "when the user clicks" blocks
      ---------------------------------------------------------- */
 
-  // find which registered thing this action line is talking about
-  function findTarget(line) {
-    var best = null;
-    for (var name in registry) {
-      if (line.toLowerCase().indexOf(name.toLowerCase()) === 0) {
-        if (!best || name.length > best.length) best = name;
-      }
-    }
-    return best;
-  }
-
   function wireBehavior(node) {
     // "when the user clicks button 1"  ->  trigger is "button 1"
     var m = node.text.toLowerCase().match(/clicks?\s+(.+)$/);
     if (!m) return;
-    var triggerName = findTargetFromPhrase(m[1]);
-    var trigger = registry[triggerName];
+    var trigger = registry[findTargetFromPhrase(m[1])];
     if (!trigger) return;
 
-    var actions = node.children.filter(function (c) { return c.text.charAt(0) === "-"; });
-
+    // everything written underneath runs, in order, every time it's clicked.
+    // we carry a little memory of "the last thing we named" so "it" works.
     trigger.addEventListener("click", function () {
-      actions.forEach(function (action) { runAction(action); });
+      runStatements(node.children, { last: null });
     });
+  }
+
+  // run a list of statements in order, keeping track of what "it" means
+  function runStatements(statements, ctx) {
+    for (var i = 0; i < statements.length; i++) {
+      var line = statements[i].text.replace(/^-\s*/, "");
+      var low  = line.toLowerCase();
+
+      if (low.indexOf("if ") === 0) {
+        // "if the folder is open"  ->  check, then run the right branch
+        var yes = checkCondition(low, ctx);
+        if (yes) {
+          runStatements(statements[i].children, ctx);
+        } else {
+          var next = statements[i + 1];
+          if (next && next.text.toLowerCase().replace(/^-\s*/, "").indexOf("otherwise") === 0) {
+            runStatements(next.children, ctx);
+          }
+        }
+        // the "otherwise" belongs to this "if" — don't run it again on its own
+        var peek = statements[i + 1];
+        if (peek && peek.text.toLowerCase().replace(/^-\s*/, "").indexOf("otherwise") === 0) i++;
+      }
+      else if (low.indexOf("otherwise") === 0) {
+        continue;   // already handled as part of its "if"
+      }
+      else {
+        runAction(statements[i], ctx);
+      }
+    }
+  }
+
+  // "if the folder is open"  ->  true or false
+  function checkCondition(low, ctx) {
+    var body  = low.replace(/^if\s+/, "");
+    var parts = body.split(/\s+is\s+/);
+    var target = resolveThing(parts[0], ctx);     // also remembers it for "it"
+    if (!target) return false;
+
+    var state   = parts[1] || "";
+    var visible = target.style.display !== "none";
+    if (/closed|hidden|gone|away|shut/.test(state)) return !visible;
+    return visible;   // open / shown / showing / here  -> is it on screen?
+  }
+
+  // do one action: open it, close it, animate it open, "folder 1 appears", etc.
+  function runAction(node, ctx) {
+    var line = node.text.replace(/^-\s*/, "");
+    var low  = line.toLowerCase();
+    var target = resolveThing(line, ctx);
+    if (!target) return;
+
+    if (low.indexOf("animate") !== -1) {
+      var motions = [], seconds = null;
+      node.children.forEach(function (sub) {
+        var t = sub.text.replace(/^-\s*/, "").toLowerCase();
+        if (t.indexOf("takes") === 0) seconds = numberIn(t);
+        for (var word in MOTION) if (t.indexOf(word) !== -1) motions.push(word);
+      });
+      animateOpen(target, motions, seconds);
+    }
+    else if (/\b(open|opens|appear|appears|show|shows)\b/.test(low)) {
+      target.style.display = "";
+    }
+    else if (/\b(close|closes|disappear|disappears|hide|hides|gone)\b/.test(low)) {
+      target.style.display = "none";
+    }
+  }
+
+  // work out which thing a phrase means: a name, "it", or "the <kind>"
+  function resolveThing(phrase, ctx) {
+    var low = phrase.toLowerCase();
+
+    // "it" means the last thing we named
+    if (/\bit\b/.test(low) && !/\b(folder|button|text|box|row|column|image|link)\b/.test(low)) {
+      return ctx.last;
+    }
+
+    // a name spoken in full: "button 1", "folder 1"
+    var byName = findTargetFromPhrase(low);
+    if (byName) { ctx.last = registry[byName]; return ctx.last; }
+
+    // "the folder" / "the button" -> the one thing of that kind
+    var k = low.match(/\b(button|folder|text|box|row|column|image|link)\b/);
+    if (k) {
+      var ofKind = Object.keys(registry).filter(function (n) { return n.split(" ")[0] === k[1]; });
+      if (ofKind.length) { ctx.last = registry[ofKind[0]]; return ctx.last; }
+    }
+
+    return ctx.last;   // nothing matched — fall back to whatever "it" was
   }
 
   // match a spoken phrase like "button 1" to a registered name
@@ -284,33 +362,6 @@
       }
     }
     return best;
-  }
-
-  function runAction(action) {
-    var line = action.text.replace(/^-\s*/, "");
-    var targetName = findTarget(line);
-    var target = registry[targetName];
-    if (!target) return;
-
-    var verb = line.slice(targetName.length).toLowerCase();
-
-    if (verb.indexOf("animate") !== -1) {
-      // gather the motion bullets sitting under this action
-      var motions = [];
-      var seconds = null;
-      action.children.forEach(function (sub) {
-        var t = sub.text.replace(/^-\s*/, "").toLowerCase();
-        if (t.indexOf("takes") === 0) seconds = numberIn(t);
-        for (var word in MOTION) if (t.indexOf(word) !== -1) motions.push(word);
-      });
-      animateOpen(target, motions, seconds);
-    }
-    else if (verb.indexOf("appear") !== -1 || verb.indexOf("open") !== -1) {
-      target.style.display = "";
-    }
-    else if (verb.indexOf("disappear") !== -1 || verb.indexOf("close") !== -1 || verb.indexOf("hide") !== -1) {
-      target.style.display = "none";
-    }
   }
 
   function animateOpen(el, motions, seconds) {

@@ -29,14 +29,9 @@ text 2
   - sits center
 
 button 1
-  - says "Open the folder"
+  - says "The folder"
   - is dark blue
-  - sits bottom-left
-
-button 2
-  - says "Close the folder"
-  - is gray
-  - sits bottom-right
+  - sits bottom
 
 folder 1
   - says "Grid Logs — the entry at 02:13 is missing."
@@ -46,13 +41,13 @@ folder 1
   - is hidden
 
 when the user clicks button 1
-  - folder 1 animates open
-    - takes 1 seconds
-    - speeds up
-    - bounces
-
-when the user clicks button 2
-  - folder 1 disappears
+  if the folder is open
+    close it
+  otherwise
+    animate it open
+      - takes 1 seconds
+      - speeds up
+      - bounces
 
 </script>
 
