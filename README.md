@@ -3,8 +3,7 @@
 A web language you write like writing.
 
 You describe a page in plain English. A small library reads your words and
-builds a real webpage from them. The English is the truth — the browser code
-is just the receipt.
+builds a real webpage from them. 
 
 ## The whole grammar
 
